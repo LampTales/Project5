@@ -11,16 +11,10 @@ int main() {
     // a.setValueForWholeMatrix(x);
     cout << a << endl;
     cout << a.getValue(0, 1, 1) << endl;
-    Matrix<int> b(2, 3, 2, x);
+    Matrix<int> b(3, 2, 2, x);
     cout << b << endl;
-    a = b;
-    // cout << "-----------------------------------" << endl;
-    a.clone(b);
-    cout << a << endl;
-    cout << b << endl;
-    // cout << "-----------------------------------" << endl;
     cout << "-----------------------------------" << endl;
-    Matrix<int> c = a + b;
+    Matrix<int> c = a * b;
     cout << "-----------------------------------" << endl;
     cout << c << endl;
 

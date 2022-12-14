@@ -337,23 +337,23 @@ Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
 
 template <typename T>
 Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b) {
-    if (false) {
+    if (a.ROIcol != b.ROIrow || a.chan != b.chan) {
         throw MatchingIllegalException();
     }
-    // Matrix<T> ans(a.ROIrow, a.ROIcol, a.chan);
-    // T* store = (T*)(ans.p + sizeof(size_t));
-    // T* ap = (T*)(a.p + sizeof(size_t));
-    // T* bp = (T*)(b.p + sizeof(size_t));
+    Matrix<T> ans(a.ROIrow, b.ROIcol, a.chan);
+    for (size_t chanCnt = 0; chanCnt < ans.chan; chanCnt++) {
+        for (size_t rowCnt = 0; rowCnt < ans.ROIrow; rowCnt++) {
+            for (size_t colCnt = 0; colCnt < ans.ROIcol; colCnt++) {
+                T sum = 0;
+                for (size_t i = 0; i < a.ROIcol; i++) {
+                    sum += a.getValue(rowCnt, i, chanCnt) * b.getValue(i, colCnt, chanCnt);
+                }
+                ans.setValue(rowCnt, colCnt, chanCnt, sum);
+            }
+        }
+    }
 
-    // for (size_t i = 0; i < a.ROIrow; i++) {
-    //     size_t storeSpot = i * a.ROIcol;
-    //     size_t apSpot = a.ROIspot + i * a.row;
-    //     size_t bpSpot = b.ROIspot + i * b.row;
-    //     for (size_t j = 0; j < a.ROIcol * a.chan; j++) {
-    //         store[storeSpot + j] = ap[apSpot + j] - bp[bpSpot];
-    //     }
-    // }
-    // return ans;
+    return ans;
 }
 // break break break break break break break
 

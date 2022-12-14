@@ -20,37 +20,35 @@ class Matrix {
     size_t ROIcol;
 
    public:
-    Matrix();  // done
+    Matrix();
     Matrix(size_t row, size_t col, size_t chan);
     Matrix(size_t row, size_t col, size_t chan, const T* values);
-    Matrix(const Matrix& m);  // done
+    Matrix(const Matrix& m);
     ~Matrix();
 
     Matrix& operator=(const Matrix& m);
     bool operator==(const Matrix& m);
     bool operator!=(const Matrix& m);
-    size_t getRow();
-    size_t getCol();
-    size_t getChan();
-    T getValue(size_t rowSpot, size_t colSpot, size_t chanSpot);
+    size_t getRow() const;
+    size_t getCol() const;
+    size_t getChan() const;
+    T getValue(size_t rowSpot, size_t colSpot, size_t chanSpot) const;
     void setValue(size_t rowSpot, size_t colSpot, size_t chanSpot, T value);
     void setValueForWholeMatrix(const T* values);
     void clone(const Matrix& m);
 
     template <typename X>
-    void converseBetweenTypes(const Matrix<X>& m);
+    void clone(const Matrix<X>& m);
 
     bool beROI();
-    void setROI(size_t ROIrowSpot, size_t ROIcolSpot, size_t ROIrow, size_t ROIcol);
-    template <typename W>
-    friend Matrix<W> setROIfrom(Matrix<W> source, size_t ROIrowSpot, size_t ROIcolSpot, size_t ROIrow, size_t ROIcol);
+    void setROIfrom(Matrix source, size_t ROIrowSpot, size_t ROIcolSpot, size_t ROIrow, size_t ROIcol);
 
     template <typename W>
-    friend Matrix<W>& operator+(const Matrix<W>& a, const Matrix<W>& b);
+    friend Matrix<W> operator+(const Matrix<W>& a, const Matrix<W>& b);
     template <typename W>
-    friend Matrix<W>& operator-(const Matrix<W>& a, const Matrix<W>& b);
+    friend Matrix<W> operator-(const Matrix<W>& a, const Matrix<W>& b);
     template <typename W>
-    friend Matrix<W>& operator*(const Matrix<W>& a, const Matrix<W>& b);
+    friend Matrix<W> operator*(const Matrix<W>& a, const Matrix<W>& b);
     template <typename W>
     friend ostream& operator<<(ostream& out, const Matrix<W>& m);
 };
@@ -59,6 +57,7 @@ class Matrix {
 template <typename T>
 Matrix<T>::Matrix()
     : row(1), col(1), chan(1), isROI(false), ROIspot(0), ROIrow(1), ROIcol(1) {
+    cout << "here is simplest constructor" << endl;
     this->p = (uint8_t*)malloc(row * col * chan * sizeof(T) + sizeof(size_t));
     *((size_t*)p) = 1;
 };
@@ -67,6 +66,9 @@ template <typename T>
 Matrix<T>::Matrix(size_t row, size_t col, size_t chan)
     : row(row), col(col), chan(chan), isROI(false), ROIspot(0), ROIrow(row), ROIcol(col) {
     this->p = (uint8_t*)malloc(row * col * chan * sizeof(T) + sizeof(size_t));
+    if (p == NULL) {
+        throw ShapeOversizeException();
+    }
     *((size_t*)p) = 1;
 }
 
@@ -78,6 +80,9 @@ Matrix<T>::Matrix(size_t row, size_t col, size_t chan, const T* values)
     }
 
     this->p = (uint8_t*)malloc(row * col * chan * sizeof(T) + sizeof(size_t));
+    if (p == NULL) {
+        throw ShapeOversizeException();
+    }
     memcpy((p + sizeof(size_t)), values, (row * col * chan * sizeof(T)));
     *((size_t*)p) = 1;
 }
@@ -85,11 +90,13 @@ Matrix<T>::Matrix(size_t row, size_t col, size_t chan, const T* values)
 template <typename T>
 Matrix<T>::Matrix(const Matrix& m)
     : row(m.row), col(m.col), chan(m.chan), isROI(m.isROI), ROIspot(m.ROIspot), ROIrow(m.ROIrow), ROIcol(m.ROIcol), p(m.p) {
+    cout << "here is copy constructor" << endl;
     *((size_t*)p) += 1;
 };
 
 template <typename T>
 Matrix<T>& Matrix<T>::operator=(const Matrix& m) {
+    cout << "here is =" << endl;
     if (this == &m) {
         cout << "this* is the same as m*" << endl;
         return *this;
@@ -125,22 +132,22 @@ bool Matrix<T>::operator!=(const Matrix& m) {
 }
 
 template <typename T>
-size_t Matrix<T>::getRow() {
+size_t Matrix<T>::getRow() const {
     return this->ROIrow;
 }
 
 template <typename T>
-size_t Matrix<T>::getCol() {
+size_t Matrix<T>::getCol() const {
     return this->ROIcol;
 }
 
 template <typename T>
-size_t Matrix<T>::getChan() {
+size_t Matrix<T>::getChan() const {
     return this->chan;
 }
 
 template <typename T>
-T Matrix<T>::getValue(size_t rowSpot, size_t colSpot, size_t chanSpot) {
+T Matrix<T>::getValue(size_t rowSpot, size_t colSpot, size_t chanSpot) const {
     if ((rowSpot + 1) > (this->ROIrow) || (colSpot + 1) > (this->ROIcol) || (chanSpot + 1) > (this->chan)) {
         throw SpotIllegalException();
     }
@@ -173,6 +180,7 @@ void Matrix<T>::setValueForWholeMatrix(const T* values) {
 
 template <typename T>
 void Matrix<T>::clone(const Matrix& m) {
+    cout << "clone1" << endl;
     if (this == &m) {
         uint8_t* np = (uint8_t*)malloc(this->row * this->col * this->chan * sizeof(T) + sizeof(size_t));
         *((size_t*)np) = 1;
@@ -218,6 +226,134 @@ void Matrix<T>::clone(const Matrix& m) {
     for (size_t i = 0; i < this->row; i++) {
         memcpy(data + length * i, oriData + m.ROIspot + m.col * m.chan * i, length * sizeof(T));
     }
+}
+
+template <typename T>
+template <typename X>
+void Matrix<T>::clone(const Matrix<X>& m) {
+    cout << "clone2" << endl;
+    *((size_t*)p) -= 1;
+    if (*((size_t*)p) == 0) {
+        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        free(p);
+    }
+
+    this->row = m.getRow();
+    this->col = m.getCol();
+    this->chan = m.getChan();
+    this->isROI = false;
+    this->ROIspot = 0;
+    this->ROIrow = this->row;
+    this->ROIcol = this->col;
+
+    this->p = (uint8_t*)malloc(this->row * this->col * this->chan * sizeof(T) + sizeof(size_t));
+    if (p == NULL) {
+        throw ShapeOversizeException();
+    }
+    *((size_t*)p) = 1;
+    T* data = (T*)(p + sizeof(size_t));
+    size_t cpySpot = 0;
+    for (size_t i = 0; i < this->row; i++) {
+        for (size_t j = 0; j < this->col; j++) {
+            for (size_t k = 0; k < this->chan; k++) {
+                data[cpySpot] = (T)m.getValue(i, j, k);
+                cpySpot++;
+            }
+        }
+    }
+}
+
+template <typename T>
+bool Matrix<T>::beROI() {
+    return this->isROI;
+}
+
+template <typename T>
+void Matrix<T>::setROIfrom(Matrix m, size_t ROIrowSpot, size_t ROIcolSpot, size_t ROIrow, size_t ROIcol) {
+    if (ROIrowSpot + ROIrow > m.ROIrow || ROIcolSpot + ROIcol > m.ROIcol) {
+        throw ROIShapeIllegalException();
+    }
+
+    this->row = m.row;
+    this->col = m.col;
+    this->chan = m.chan;
+    this->isROI = true;
+    this->ROIrow = ROIrow;
+    this->ROIcol = ROIcol;
+    this->ROIspot = m.ROIspot + (ROIrowSpot * m.col + ROIcolSpot) * this->chan;
+
+    *((size_t*)(m.p)) += 1;
+
+    *((size_t*)p) -= 1;
+    if (*((size_t*)p) == 0) {
+        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        free(p);
+    }
+
+    this->p = m.p;
+}
+
+template <typename T>
+Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b) {
+    if (a.ROIrow != b.ROIrow || a.ROIcol != b.ROIcol || a.chan != b.chan) {
+        throw MatchingIllegalException();
+    }
+    Matrix<T> ans(a.ROIrow, a.ROIcol, a.chan);
+    T* store = (T*)(ans.p + sizeof(size_t));
+    T* ap = (T*)(a.p + sizeof(size_t));
+    T* bp = (T*)(b.p + sizeof(size_t));
+
+    for (size_t i = 0; i < a.ROIrow; i++) {
+        size_t storeSpot = i * a.ROIcol * a.chan;
+        size_t apSpot = a.ROIspot + i * a.col * a.chan;
+        size_t bpSpot = b.ROIspot + i * b.col * b.chan;
+        for (size_t j = 0; j < a.ROIcol * a.chan; j++) {
+            store[storeSpot + j] = ap[apSpot + j] + bp[bpSpot + j];
+        }
+    }
+    return ans;
+}
+
+template <typename T>
+Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
+    if (a.ROIrow != b.ROIrow || a.ROIcol != b.ROIcol || a.chan != b.chan) {
+        throw MatchingIllegalException();
+    }
+    Matrix<T> ans(a.ROIrow, a.ROIcol, a.chan);
+    T* store = (T*)(ans.p + sizeof(size_t));
+    T* ap = (T*)(a.p + sizeof(size_t));
+    T* bp = (T*)(b.p + sizeof(size_t));
+
+    for (size_t i = 0; i < a.ROIrow; i++) {
+        size_t storeSpot = i * a.ROIcol * a.chan;
+        size_t apSpot = a.ROIspot + i * a.col * a.chan;
+        size_t bpSpot = b.ROIspot + i * b.col * b.chan;
+        for (size_t j = 0; j < a.ROIcol * a.chan; j++) {
+            store[storeSpot + j] = ap[apSpot + j] - bp[bpSpot + j];
+        }
+    }
+    return ans;
+}
+
+template <typename T>
+Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b) {
+    if (false) {
+        throw MatchingIllegalException();
+    }
+    // Matrix<T> ans(a.ROIrow, a.ROIcol, a.chan);
+    // T* store = (T*)(ans.p + sizeof(size_t));
+    // T* ap = (T*)(a.p + sizeof(size_t));
+    // T* bp = (T*)(b.p + sizeof(size_t));
+
+    // for (size_t i = 0; i < a.ROIrow; i++) {
+    //     size_t storeSpot = i * a.ROIcol;
+    //     size_t apSpot = a.ROIspot + i * a.row;
+    //     size_t bpSpot = b.ROIspot + i * b.row;
+    //     for (size_t j = 0; j < a.ROIcol * a.chan; j++) {
+    //         store[storeSpot + j] = ap[apSpot + j] - bp[bpSpot];
+    //     }
+    // }
+    // return ans;
 }
 // break break break break break break break
 

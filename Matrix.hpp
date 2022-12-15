@@ -35,8 +35,9 @@ class Matrix {
     T getValue(size_t rowSpot, size_t colSpot, size_t chanSpot) const;
     void setValue(size_t rowSpot, size_t colSpot, size_t chanSpot, T value);
     void setValueForWholeMatrix(const T* values);
-    void clone(const Matrix& m);
+    void setValueForWholeMatrix(const Matrix& m);
 
+    void clone(const Matrix& m);
     template <typename X>
     void clone(const Matrix<X>& m);
 
@@ -57,7 +58,7 @@ class Matrix {
 template <typename T>
 Matrix<T>::Matrix()
     : row(1), col(1), chan(1), isROI(false), ROIspot(0), ROIrow(1), ROIcol(1) {
-    cout << "here is simplest constructor" << endl;
+    // cout << "here is simplest constructor" << endl;
     this->p = (uint8_t*)malloc(row * col * chan * sizeof(T) + sizeof(size_t));
     *((size_t*)p) = 1;
 };
@@ -90,21 +91,21 @@ Matrix<T>::Matrix(size_t row, size_t col, size_t chan, const T* values)
 template <typename T>
 Matrix<T>::Matrix(const Matrix& m)
     : row(m.row), col(m.col), chan(m.chan), isROI(m.isROI), ROIspot(m.ROIspot), ROIrow(m.ROIrow), ROIcol(m.ROIcol), p(m.p) {
-    cout << "here is copy constructor" << endl;
+    // cout << "here is copy constructor" << endl;
     *((size_t*)p) += 1;
 };
 
 template <typename T>
 Matrix<T>& Matrix<T>::operator=(const Matrix& m) {
-    cout << "here is =" << endl;
+    // cout << "here is =" << endl;
     if (this == &m) {
-        cout << "this* is the same as m*" << endl;
+        // cout << "this* is the same as m*" << endl;
         return *this;
     }
 
     *((size_t*)p) -= 1;
     if (*((size_t*)p) == 0) {
-        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
         free(p);
     }
 
@@ -179,8 +180,22 @@ void Matrix<T>::setValueForWholeMatrix(const T* values) {
 }
 
 template <typename T>
+void Matrix<T>::setValueForWholeMatrix(const Matrix& m) {
+    if (this->ROIrow != m.ROIrow || this->ROIcol != m.ROIcol || this->chan != m.chan) {
+        throw MatchingIllegalException();
+    }
+
+    T* data = (T*)(p + sizeof(size_t));
+    T* oriData = (T*)(m.p + sizeof(size_t));
+    size_t length = ROIcol * chan * sizeof(T);
+    for (size_t i = 0; i < ROIrow; i++) {
+        memcpy(data + ROIspot + i * col * chan, oriData + m.ROIspot + i * m.col * chan, length);
+    }
+}
+
+template <typename T>
 void Matrix<T>::clone(const Matrix& m) {
-    cout << "clone1" << endl;
+    // cout << "clone1" << endl;
     if (this == &m) {
         uint8_t* np = (uint8_t*)malloc(this->row * this->col * this->chan * sizeof(T) + sizeof(size_t));
         *((size_t*)np) = 1;
@@ -193,7 +208,7 @@ void Matrix<T>::clone(const Matrix& m) {
 
         *((size_t*)p) -= 1;
         if (*((size_t*)p) == 0) {
-            cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+            // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
             free(p);
         }
         this->p = np;
@@ -206,7 +221,7 @@ void Matrix<T>::clone(const Matrix& m) {
 
     *((size_t*)p) -= 1;
     if (*((size_t*)p) == 0) {
-        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
         free(p);
     }
 
@@ -231,10 +246,10 @@ void Matrix<T>::clone(const Matrix& m) {
 template <typename T>
 template <typename X>
 void Matrix<T>::clone(const Matrix<X>& m) {
-    cout << "clone2" << endl;
+    // cout << "clone2" << endl;
     *((size_t*)p) -= 1;
     if (*((size_t*)p) == 0) {
-        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
         free(p);
     }
 
@@ -286,7 +301,7 @@ void Matrix<T>::setROIfrom(Matrix m, size_t ROIrowSpot, size_t ROIcolSpot, size_
 
     *((size_t*)p) -= 1;
     if (*((size_t*)p) == 0) {
-        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
         free(p);
     }
 
@@ -392,7 +407,7 @@ template <typename T>
 Matrix<T>::~Matrix() {
     *((size_t*)p) -= 1;
     if (*((size_t*)p) == 0) {
-        cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
+        // cout << "My smart pointer was pointed by cnt 0, time to release!" << endl;
         free(p);
     }
 }
